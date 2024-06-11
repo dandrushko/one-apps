@@ -25,6 +25,9 @@ packer-service_VRouter: packer-alpine318 ${DIR_EXPORT}/service_VRouter.qcow2
 packer-service_Harbor: packer-ubuntu2204 ${DIR_EXPORT}/service_Harbor.qcow2
 	@${INFO} "Packer service_Harbor done"
 
+packer-service_UERANSIM: packer-ubuntu2204 ${DIR_EXPORT}/service_UERANSIM.qcow2
+	@${INFO} "Packer service_UERANSIM done"
+
 packer-service_MinIO: packer-ubuntu2204 ${DIR_EXPORT}/service_MinIO.qcow2
 	@${INFO} "Packer service_MinIO done"
 

@@ -27,7 +27,10 @@ ONE_SERVICE_PARAMS=(
     'ONEAPP_TAC_ID' 'configure' 'Tracking Area Code' 'O|text'
     'ONEAPP_AMF_IP' 'configure' 'AMF IP Address' 'O|text'
     'ONEAPP_AMF_PORT' 'configure' 'AMF_PORT' 'O|text'
-    'ONEAPP_SST_ID' 'configure' 'List of supported S-NSSAIs by this gNB slices:' 'O|text'
+    'ONEAPP_SST_ID' 'configure' 'List of supported S-NSSAIs by this gNB slices' 'O|text'
+    'ONEAPP_UE_IMSI' 'configure' 'IMSI number of the UE. IMSI = [MCC|MNC|MSISDN] (In total 15 digits)' 'O|text'
+    'ONEAPP_SUBSCRIPTOIN_KEY' 'configure' 'Permanent subscription key' 'O|text'
+    'ONEAPP_OPERATOR_CODE' 'configure' 'Operator code (OP or OPC) of the UE' 'O|text'
 
 )
 
@@ -64,6 +67,10 @@ AMF_IP="${ONEAPP_AMF_IP:-127.0.0.1}"
 AMF_PORT="${ONEAPP_AMF_PORT:-38412}"
 SST_ID="${ONEAPP_SST_ID:-1}"
 
+UE_IMSI="${ONEAPP_UE_IMSI:-imsi-999700000000001}"
+SUBSCRIPTOIN_KEY="${ONEAPP_SUBSCRIPTOIN_KEY:-465B5CE8B199B49FAA5F0A2EE238A6BC}"
+OPERATOR_CODE="${ONEAPP_OPERATOR_CODE:-E8ED289DEBA952E4283B54E88E6183CA}"
+
 #
 # ------------------------------------------------------------------------------
 # Installation Stage => Installs requirements, downloads and unpacks Harbor
@@ -92,17 +99,23 @@ service_configure() {
 # Will start gNB and UE 
 service_bootstrap() {
     msg info "Starting bootstrap..."
-
-    build/nr-gnb -c config/ueransim-gnb.yaml > /var/log/gnb.log &
+    # Starting gNB process
+     /root/UERANSIM/build/nr-gnb -c  /root/UERANSIMconfig/ueransim-gnb.yaml > /var/log/gnb.log &
     if [ $? -ne 0 ]; then
         msg error "Error starting gNodeB, aborting..."
         exit 1
     else
         msg info "gNodeB was strarted..."
     fi
-
     sleep 5
-
+    # Starting UE
+    /root/UERANSIM/build/nr-ue -c /root/UERANSIMconfig/ueransim-ue.yaml > /var/log/ue.log &
+    if [ $? -ne 0 ]; then
+        msg error "Error starting UE, aborting..."
+        exit 1
+    else
+        msg info "UE was strarted..."
+    fi
 
     msg info "Bootstrap phase finished"
 }
@@ -132,10 +145,16 @@ install_requirements(){
 
 build_ueransim(){
     cd /root
-    git clone https://github.com/aligungr/UERANSIM
+    # Will clone repo only is it missing
+    [ ! -d /root/UERANSIM ] && git clone https://github.com/aligungr/UERANSIM
+ 
+    # Will start build process only if gNB binary is mising
     cd UERANSIM
-    make
+    if [ ! -f /root/UERANSIM/build/nr-gnb ]; then
+        make
+    fi
 
+    # If build wasn't successfull, report error and exit
     if [ $? -ne 0 ]; then
        msg error "Error building UERANSIM"
        exit 1
@@ -169,15 +188,65 @@ ignoreStreamIds: true
 EOF
 }
 
-start_gnb(){
-   echo ""
-}
-
 confug_ue(){
-   echo ""
+   cat << EOF > config/ueransim-ue.yaml
+supi: '${UE_IMSI}'
+mcc: '${NETWORK_MCC}'
+mnc: '${NETWORK_MNC}'
+
+key: '${SUBSCRIPTOIN_KEY}'
+op: '${OPERATOR_CODE}'
+
+opType: 'OPC'
+amf: '8000'
+
+gnbSearchList:
+  - 127.0.0.1 
+
+uacAic:
+  mps: false
+  mcs: false
+
+uacAcc:
+  normalClass: 0
+  class11: false
+  class12: false
+  class13: false
+  class14: false
+  class15: false
+
+sessions:
+  - apn: internet
+    emergency: false
+    slice:
+      sd: "0x111111"
+      sst: 1
+    type: IPv4
+
+configured-nssai:
+  - sst: 1
+    sd: 0x111111
+
+default-nssai:
+  - sst: 1
+    sd: 0x111111
+
+integrity:
+  IA1: true
+  IA2: true
+  IA3: true
+
+ciphering:
+  EA1: true
+  EA2: true
+  EA3: true
+
+integrityMaxRate:
+  uplink: 'full'
+  downlink: 'full'
+
+EOF
+
 }
 
-start_ue(){
-   echo ""
-}
 
