@@ -40,7 +40,7 @@ ONE_SERVICE_PARAMS=(
 
 # Appliance metadata
 ONE_SERVICE_NAME='UERANSIM - KVM'
-ONE_SERVICE_VERSION='x.x.x.'   #latest
+ONE_SERVICE_VERSION='1.0.0'   #latest
 ONE_SERVICE_BUILD=$(date +%s)
 ONE_SERVICE_SHORT_DESCRIPTION='Appliance with UERANSIM 5G simulator'
 ONE_SERVICE_DESCRIPTION=$(cat <<EOF
@@ -100,7 +100,7 @@ service_configure() {
 service_bootstrap() {
     msg info "Starting bootstrap..."
     # Starting gNB process
-     /root/UERANSIM/build/nr-gnb -c  /root/UERANSIMconfig/ueransim-gnb.yaml > /var/log/gnb.log &
+     /opt/UERANSIM/build/nr-gnb -c  /opt/UERANSIMconfig/ueransim-gnb.yaml > /var/log/gnb.log &
     if [ $? -ne 0 ]; then
         msg error "Error starting gNodeB, aborting..."
         exit 1
@@ -109,7 +109,7 @@ service_bootstrap() {
     fi
     sleep 5
     # Starting UE
-    /root/UERANSIM/build/nr-ue -c /root/UERANSIMconfig/ueransim-ue.yaml > /var/log/ue.log &
+    /opt/UERANSIM/build/nr-ue -c /opt/UERANSIMconfig/ueransim-ue.yaml > /var/log/ue.log &
     if [ $? -ne 0 ]; then
         msg error "Error starting UE, aborting..."
         exit 1
@@ -131,7 +131,7 @@ check_internet_access() {
         msg info "Internet access OK"
         return 0
     else
-        msg error "The VM does not have internet access. Aborting Harbor deployment..."
+        msg error "The VM does not have internet access. Aborting UERANSIM deployment..."
         exit 1
     fi
 }
@@ -144,13 +144,13 @@ install_requirements(){
 }
 
 build_ueransim(){
-    cd /root
+    cd /opt
     # Will clone repo only is it missing
-    [ ! -d /root/UERANSIM ] && git clone https://github.com/aligungr/UERANSIM
+    [ ! -d /opt/UERANSIM ] && git clone https://github.com/aligungr/UERANSIM
  
     # Will start build process only if gNB binary is mising
     cd UERANSIM
-    if [ ! -f /root/UERANSIM/build/nr-gnb ]; then
+    if [ ! -f /opt/UERANSIM/build/nr-gnb ]; then
         make
     fi
 
@@ -164,7 +164,7 @@ build_ueransim(){
 
 config_gnb(){
    # Assuming config/open5gs-gnb.yaml as the default UE config file
-   cat << EOF > config/ueransim-gnb.yaml
+   cat << EOF > /opt/UERANSIM/config/ueransim-gnb.yaml
 mcc: '${NETWORK_MCC}'
 mnc: '${NETWORK_MNC}' 
 
@@ -189,7 +189,7 @@ EOF
 }
 
 confug_ue(){
-   cat << EOF > config/ueransim-ue.yaml
+   cat << EOF > /opt/UERANSIM/config/ueransim-ue.yaml
 supi: '${UE_IMSI}'
 mcc: '${NETWORK_MCC}'
 mnc: '${NETWORK_MNC}'
