@@ -100,7 +100,7 @@ service_configure() {
 service_bootstrap() {
     msg info "Starting bootstrap..."
     # Starting gNB process
-     /opt/UERANSIM/build/nr-gnb -c  /opt/UERANSIMconfig/ueransim-gnb.yaml > /var/log/gnb.log &
+     /opt/UERANSIM/build/nr-gnb -c  /opt/UERANSIM/config/ueransim-gnb.yaml > /var/log/gnb.log &
     if [ $? -ne 0 ]; then
         msg error "Error starting gNodeB, aborting..."
         exit 1
@@ -109,7 +109,7 @@ service_bootstrap() {
     fi
     sleep 5
     # Starting UE
-    /opt/UERANSIM/build/nr-ue -c /opt/UERANSIMconfig/ueransim-ue.yaml > /var/log/ue.log &
+    /opt/UERANSIM/build/nr-ue -c /opt/UERANSIM/config/ueransim-ue.yaml > /var/log/ue.log &
     if [ $? -ne 0 ]; then
         msg error "Error starting UE, aborting..."
         exit 1
@@ -188,7 +188,7 @@ ignoreStreamIds: true
 EOF
 }
 
-confug_ue(){
+config_ue(){
    cat << EOF > /opt/UERANSIM/config/ueransim-ue.yaml
 supi: '${UE_IMSI}'
 mcc: '${NETWORK_MCC}'
